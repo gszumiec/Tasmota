@@ -459,8 +459,8 @@
 
 // -- MQTT - TLS - Azure IoT & IoT Central ---------
 // Starting with version v9.4.0.3 added support for both Azure IoT Hub and IoT Central
-//#define USE_MQTT_TLS                             // REQUIRED Use TLS for MQTT connection (+34.5k code, +7.0k mem and +4.8k additional during connection handshake)
-//  #define USE_MQTT_AZURE_IOT                     // REQUIRED Enable accesss to IoT Hub without DPS using a preshared key: https://tasmota.github.io/docs/Azure-IoT-Hub/  Enable MQTT for Azure IoT Hub (+1k code)
+#define USE_MQTT_TLS                             // REQUIRED Use TLS for MQTT connection (+34.5k code, +7.0k mem and +4.8k additional during connection handshake)
+#define USE_MQTT_AZURE_IOT                     // REQUIRED Enable accesss to IoT Hub without DPS using a preshared key: https://tasmota.github.io/docs/Azure-IoT-Hub/  Enable MQTT for Azure IoT Hub (+1k code)
 //  #define USE_MQTT_AZURE_DPS_SCOPEID             // OPTIONAL Enables Azure Device Provisioning Service (DPS) for provision at scale, REQUIRED for IoT Central.  Uses the REST over HTTPS protocol (+4k memory)
 //  #define USE_MQTT_AZURE_DPS_PRESHAREDKEY        // OPTIONAL The Preshared Key of DPS https://github.com/tasmota/docs/blob/development/docs/Azure-IoT-Central.md
 //  #define USE_MQTT_AZURE_DPS_SCOPE_ENDPOINT      // OPTIONAL Defaults to "https://global.azure-devices-provisioning.net/", can be changed for Azure China, Azure Germany or others.
