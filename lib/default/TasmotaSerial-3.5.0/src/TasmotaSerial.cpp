@@ -48,6 +48,7 @@ TasmotaSerial::TasmotaSerial(int receive_pin, int transmit_pin, int hardware_fal
   m_valid = false;
   m_hardserial = false;
   m_hardswap = false;
+  m_overflow = false;
   m_stop_bits = 1;
   m_nwmode = nwmode;
   serial_buffer_size = buffer_size;
@@ -162,11 +163,11 @@ size_t TasmotaSerial::setRxBufferSize(size_t size) {
   if (size != serial_buffer_size) {
     if (m_hardserial) {
       if (size > 256) {      // Default hardware serial Rx buffer size
-  #ifdef ESP8266
+#ifdef ESP8266
         serial_buffer_size = size;
         Serial.setRxBufferSize(serial_buffer_size);
-  #endif  // ESP8266
-  #ifdef ESP32
+#endif  // ESP8266
+#ifdef ESP32
         if (TSerial) {
           // RX Buffer can't be resized when Serial is already running
           serial_buffer_size = size;
@@ -176,7 +177,7 @@ size_t TasmotaSerial::setRxBufferSize(size_t size) {
           TSerial->setRxBufferSize(serial_buffer_size);
           Esp32Begin();
         }
-  #endif  // ESP32
+#endif  // ESP32
       }
     }
     else if (m_buffer) {
@@ -267,6 +268,21 @@ bool TasmotaSerial::hardwareSerial(void) {
 #endif  // ESP32
 }
 
+bool TasmotaSerial::overflow(void) {
+  if (m_hardserial) {
+#ifdef ESP8266
+    return Serial.hasOverrun();  // Returns then clear overrun flag
+#endif  // ESP8266
+#ifdef ESP32
+    return false;  // Not implemented
+#endif  // ESP32
+  } else {
+    bool res = m_overflow;
+    m_overflow = false;
+    return res;
+  }
+}
+
 void TasmotaSerial::flush(void) {
   if (m_hardserial) {
 #ifdef ESP8266
@@ -322,7 +338,7 @@ size_t TasmotaSerial::read(char* buffer, size_t size) {
   } else {
     if ((-1 == m_rx_pin) || (m_in_pos == m_out_pos)) { return 0; }
     size_t count = 0;
-    for( ; size && (m_in_pos == m_out_pos) ; --size, ++count) {
+    for( ; size && (m_in_pos != m_out_pos) ; --size, ++count) {
       *buffer++ = m_buffer[m_out_pos];
       m_out_pos = (m_out_pos +1) % serial_buffer_size;
     }
@@ -341,6 +357,11 @@ int TasmotaSerial::available(void) {
   } else {
     int avail = m_in_pos - m_out_pos;
     if (avail < 0) avail += serial_buffer_size;
+
+//    if (!avail) {
+//      optimistic_yield(10000);
+//    }
+
     return avail;
   }
 }
@@ -425,6 +446,10 @@ void IRAM_ATTR TasmotaSerial::rxRead(void) {
       if (next != (int)m_out_pos) {
         m_buffer[m_in_pos] = rec;
         m_in_pos = next;
+      } else {
+        // Buffer overrun - exit and fix Hardware Watchdog in case of high speed flooding
+        m_overflow = true;
+        break;
       }
 
       TM_SERIAL_WAIT_RCV_LOOP;    // wait for stop bit
